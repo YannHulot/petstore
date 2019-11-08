@@ -3,8 +3,6 @@ package models
 import (
 	"os"
 	"testing"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func TestNewConfigValidation(t *testing.T) {
@@ -16,20 +14,17 @@ func TestNewConfigValidation(t *testing.T) {
 
 	c, err := NewConfig()
 	if err != nil {
-		spew.Dump(err)
 		t.Fatal("there should be no errors creating the config")
 	}
 
 	err = c.Validate()
 	if err == nil {
-		spew.Dump(err)
 		t.Fatal("config should be invalid")
 	}
 
 	os.Setenv("DB_USER", "test1")
 	c2, err := NewConfig()
 	if err != nil {
-		spew.Dump(err)
 		t.Fatal("there should be no errors creating the config")
 	}
 
