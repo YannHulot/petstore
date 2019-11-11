@@ -33,7 +33,7 @@ func (p *PetRepository) SavePet(pet *models.Pet) (*models.Pet, error) {
 func (p *PetRepository) FindPetByID(id string) (*models.Pet, error) {
 	var pet models.Pet
 
-	err := p.datastore.Debug().First(&pet, id).Related(&pet.Tags, "PetID").Related(&pet.Category, "PetID").Error
+	err := p.datastore.Debug().Preload("Tags").Preload("Category").First(&pet, id).Error
 	if err != nil {
 		return &pet, err
 	}
@@ -63,20 +63,55 @@ func (p *PetRepository) UpdatePet(updatedPet *models.Pet) (*models.Pet, error) {
 		return &models.Pet{}, fmt.Errorf("pet id is null, cannot update")
 	}
 
-	// delete the old Tags records
-	err := p.datastore.Debug().Where("pet_id = ?", updatedPet.ID).Delete(&models.Tag{}).Error
-	if err != nil {
-		return &models.Pet{}, err
-	}
-
 	// update the main Pet record
-	err = p.datastore.Debug().Model(&models.Pet{}).Updates(&updatedPet).Error
+	err := p.datastore.Debug().Model(&models.Pet{}).Updates(&updatedPet).Error
 	if err != nil {
 		return &models.Pet{}, err
 	}
 
-	// update the related category record
-	err = p.datastore.Debug().Model(&models.Category{}).Updates(&updatedPet.Category).Where("CategoryID", &updatedPet.Category.ID).Error
+	// let's assume that the client sending the payload is the source of truth.
+	// if we have a Pet record in a the DB with related Tag records, then we have to compare the Tags from the payload,
+	// with the tags from the DB.
+
+	// if the data from the DB Tag records is different, then update the Tag with the data from the payload,
+	// if the TAG does not exists, then save the new Tag record in the DB
+
+	// If there are no tags in the payload, then delete the Tag records  in the db.
+	// if the number of tags in the payload is smaller than the number of tags in the DB then some tags need to be deleted.
+
+	// Tt seems that in order to perform an update we need to do a lot of work to maintain data consistency
+	// For the purpose of this example, we will simplify the process a bit.
+	// We will delete all the related Tags and Category records and save whatever is in the payload.
+
+	// WARNING: In a production environment, WE WOULD NOT DO THIS.
+
+	// Delete all the related records
+	err = p.datastore.Debug().Where("pet_id = ?", updatedPet.ID).Delete(&models.Tag{}).Error
+	if err != nil {
+		return &models.Pet{}, err
+	}
+
+	err = p.datastore.Debug().Where("pet_id = ?", updatedPet.ID).Delete(&models.Category{}).Error
+	if err != nil && !gorm.IsRecordNotFoundError(err) {
+		return &models.Pet{}, err
+	}
+
+	// create the new records
+	category := updatedPet.Category
+	tags := updatedPet.Tags
+
+	for _, tag := range tags {
+		// set up the association with teh pet record
+		tag.PetID = updatedPet.ID
+		err := p.datastore.Debug().Model(&models.Tag{}).Save(&tag).Error
+		if err != nil {
+			return &models.Pet{}, err
+		}
+	}
+
+	// set up the association with the pet record
+	category.PetID = updatedPet.ID
+	err = p.datastore.Debug().Model(&models.Category{}).Save(&category).Error
 	if err != nil {
 		return &models.Pet{}, err
 	}
@@ -92,35 +127,15 @@ func (p *PetRepository) FindPetByStatus(status string) (*[]models.Pet, error) {
 		return &[]models.Pet{}, fmt.Errorf("status is empty. status is required to do the search")
 	}
 
-	err := p.datastore.Debug().Model(&models.Pet{}).Where("status = ?", status).Limit(100).Find(&pets).Error
+	err := p.datastore.Debug().
+		Model(&models.Pet{}).
+		Preload("Tags").
+		Preload("Category").
+		Where("status = ?", status).
+		Limit(100).
+		Find(&pets).Error
 	if err != nil {
 		return &[]models.Pet{}, err
-	}
-
-	// I am aware that this is not the best way to do a find the related records but
-	// I did not have the time to optimize every query
-	if len(pets) > 0 {
-		for i := range pets {
-			err := p.datastore.Debug().Model(&models.Tag{}).Where("pet_id = ?", pets[i].ID).Take(&pets[i].Tags).Error
-			if err != nil {
-				if gorm.IsRecordNotFoundError(err) {
-					// we don't want to return if an error occurs in case we can't find a related record,
-					// we simply move on to the next record
-					continue
-				}
-				return &[]models.Pet{}, err
-			}
-
-			err = p.datastore.Debug().Model(&models.Category{}).Where("pet_id = ?", pets[i].ID).Take(&pets[i].Category).Error
-			if err != nil {
-				if gorm.IsRecordNotFoundError(err) {
-					// we don't want to return if an error occurs in case we can't find a related record,
-					// we simply move on to the next record
-					continue
-				}
-				return &[]models.Pet{}, err
-			}
-		}
 	}
 
 	return &pets, nil
