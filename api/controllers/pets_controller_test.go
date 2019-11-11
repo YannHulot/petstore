@@ -88,13 +88,13 @@ func (s *Suite) Test_controller_FindPetByIDOrStatus_findPetByID() {
 			AddRow(id, name, status))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "tags" WHERE ("pet_id" = $1) ORDER BY "tags"."tag_id" ASC`)).
+		`SELECT * FROM "tags" WHERE ("pet_id" IN ($1)) ORDER BY "tags"."id" ASC`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(1, "mock-tag-name", 2))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "categories" WHERE ("pet_id" = $1) ORDER BY "categories"."category_id" ASC`)).
+		`SELECT * FROM "categories" WHERE ("pet_id" IN ($1)) ORDER BY "categories"."id" ASC`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(1, "mock-category-name", 4))
@@ -214,13 +214,13 @@ func (s *Suite) Test_controller_FindPetByIDOrStatus_findPetByStatus_singleStatus
 			AddRow(id, name, status))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "tags" WHERE (pet_id = $1) LIMIT 1`)).
+		`SELECT * FROM "tags" WHERE ("pet_id" IN ($1))`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(id, "mock-tag-name", 2))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "categories" WHERE (pet_id = $1) LIMIT 1`)).
+		`SELECT * FROM "categories" WHERE ("pet_id" IN ($1))`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(id, "mock-category-name", 4))
@@ -271,13 +271,13 @@ func (s *Suite) Test_controller_FindPetByIDOrStatus_findPetByStatus_multipleStat
 			AddRow(id, name, status))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "tags" WHERE (pet_id = $1) LIMIT 1`)).
+		`SELECT * FROM "tags" WHERE ("pet_id" IN ($1))`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(id, "mock-tag-name", 2))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "categories" WHERE (pet_id = $1) LIMIT 1`)).
+		`SELECT * FROM "categories" WHERE ("pet_id" IN ($1))`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(id, "mock-category-name", 4))
@@ -289,13 +289,13 @@ func (s *Suite) Test_controller_FindPetByIDOrStatus_findPetByStatus_multipleStat
 			AddRow("7", "rover", "sold"))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "tags" WHERE (pet_id = $1) LIMIT 1`)).
+		`SELECT * FROM "tags" WHERE ("pet_id" IN ($1))`)).
 		WithArgs(7).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow("7", "mock-tag-name-2", 9))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "categories" WHERE (pet_id = $1) LIMIT 1`)).
+		`SELECT * FROM "categories" WHERE ("pet_id" IN ($1))`)).
 		WithArgs(7).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(7, "mock-category-name-2", 10))
@@ -515,13 +515,13 @@ func (s *Suite) Test_UpdatePetWithFormData_success() {
 			AddRow(id, name, status))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "tags" WHERE ("pet_id" = $1) ORDER BY "tags"."tag_id" ASC`)).
+		`SELECT * FROM "tags" WHERE ("pet_id" IN ($1)) ORDER BY "tags"."id`)).
 		WithArgs(5).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(5, "mock-tag-name", 2))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "categories" WHERE ("pet_id" = $1) ORDER BY "categories"."category_id" ASC`)).
+		`SELECT * FROM "categories" WHERE ("pet_id" IN ($1)) ORDER BY "categories"."id`)).
 		WithArgs(5).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(5, "mock-category-name", 4))
@@ -529,7 +529,7 @@ func (s *Suite) Test_UpdatePetWithFormData_success() {
 	recorder := httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 
-	expectedResponse := `{"id":5,"category":{"id":0,"name":"mock-category-name"},"name":"good-boy","photoUrls":null,"tags":[{"id":0,"name":"mock-tag-name"}],"status":"taken"}`
+	expectedResponse := `{"id":5,"category":{"id":4,"name":"mock-category-name"},"name":"good-boy","photoUrls":null,"tags":[{"id":2,"name":"mock-tag-name"}],"status":"taken"}`
 
 	require.Nil(s.T(), deep.Equal(recorder.Code, 200))
 	require.Nil(s.T(), deep.Equal(recorder.Body.String(), expectedResponse))
@@ -559,7 +559,7 @@ func (s *Suite) Test_DeletePet_error_no_api_key() {
 	recorder := httptest.NewRecorder()
 	r.ServeHTTP(recorder, req)
 
-	expectedResponse := `{"message":"Unauthorized - API key not supplied in Headers","type":"error"}`
+	expectedResponse := `{"message":"unauthorized - API key not supplied in Headers","type":"error"}`
 
 	require.Nil(s.T(), deep.Equal(recorder.Code, 401))
 	require.Nil(s.T(), deep.Equal(recorder.Body.String(), expectedResponse))
@@ -680,11 +680,13 @@ func (s *Suite) Test_SavePet_success() {
 	r.POST("/api/v1/pet", s.controller.SavePet)
 
 	expectedTag := models.Tag{
+		ID:    6,
 		Name:  tagName,
 		PetID: 1,
 	}
 
 	expectedCategory := models.Category{
+		ID:    12,
 		Name:  categoryName,
 		PetID: 1,
 	}
@@ -709,13 +711,13 @@ func (s *Suite) Test_SavePet_success() {
 		WithArgs(name, urls, status).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-	s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "categories" ("name","pet_id") VALUES ($1,$2) RETURNING "categories"."category_id"`)).
-		WithArgs(categoryName, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(5))
+	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "categories" SET "name" = $1, "pet_id" = $2  WHERE "categories"."id" = $3`)).
+		WithArgs(categoryName, 1, 12).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "tags" ("name","pet_id") VALUES ($1,$2) RETURNING "tags"."tag_id"`)).
-		WithArgs(tagName, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(6))
+	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "tags" SET "name" = $1, "pet_id" = $2  WHERE "tags"."id" = $3`)).
+		WithArgs(tagName, 1, 6).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	s.mock.ExpectCommit()
 
@@ -731,9 +733,7 @@ func (s *Suite) Test_SavePet_success() {
 
 	// expected values
 	goodPet.ID = 1
-	goodPet.Category.CategoryID = 5
 	goodPet.Category.PetID = 0
-	goodPet.Tags[0].TagID = 6
 	goodPet.Tags[0].PetID = 0
 
 	require.Nil(s.T(), deep.Equal(recorder.Code, 200))

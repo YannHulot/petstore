@@ -71,13 +71,13 @@ func (s *Suite) Test_repository_UpdatePetAttributes() {
 			AddRow(id, name, status))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "tags" WHERE ("pet_id" = $1) ORDER BY "tags"."tag_id" ASC`)).
+		`SELECT * FROM "tags" WHERE ("pet_id" IN ($1)) ORDER BY "tags"."id" ASC`)).
 		WithArgs(5).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(5, "mock-tag-name", 2))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "categories" WHERE ("pet_id" = $1) ORDER BY "categories"."category_id" ASC`)).
+		`SELECT * FROM "categories" WHERE ("pet_id" IN ($1)) ORDER BY "categories"."id" ASC`)).
 		WithArgs(5).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(5, "mock-category-name", 4))
@@ -115,13 +115,13 @@ func (s *Suite) Test_repository_FindPetByID() {
 			AddRow(id, name))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "tags" WHERE ("pet_id" = $1) ORDER BY "tags"."tag_id" ASC`)).
+		`SELECT * FROM "tags" WHERE ("pet_id" IN ($1)) ORDER BY "tags"."id" ASC`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(1, "mock-tag-name", 2))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "categories" WHERE ("pet_id" = $1) ORDER BY "categories"."category_id" ASC`)).
+		`SELECT * FROM "categories" WHERE ("pet_id" IN ($1)) ORDER BY "categories"."id" ASC`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(1, "mock-category-name", 4))
@@ -164,13 +164,13 @@ func (s *Suite) Test_repository_FindPetByStatus() {
 			AddRow(id, name, status))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "tags"  WHERE (pet_id = $1) LIMIT 1`)).
+		`SELECT * FROM "tags" WHERE ("pet_id" IN ($1))`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(1, "mock-tag-name", 2))
 
 	s.mock.ExpectQuery(regexp.QuoteMeta(
-		`SELECT * FROM "categories"  WHERE (pet_id = $1) LIMIT 1`)).
+		`SELECT * FROM "categories" WHERE ("pet_id" IN ($1))`)).
 		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"pet_id", "name", "id"}).
 			AddRow(1, "mock-category-name", 4))
@@ -213,11 +213,13 @@ func (s *Suite) Test_repository_SavePet() {
 	)
 
 	expectedTag := models.Tag{
+		ID:    5,
 		Name:  tagName,
 		PetID: 1,
 	}
 
 	expectedCategory := models.Category{
+		ID:    2,
 		Name:  categoryName,
 		PetID: 1,
 	}
@@ -239,13 +241,13 @@ func (s *Suite) Test_repository_SavePet() {
 		WithArgs(name, urls, status).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-	s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "categories" ("name","pet_id") VALUES ($1,$2) RETURNING "categories"."category_id"`)).
-		WithArgs(categoryName, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
+	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "categories" SET "name" = $1, "pet_id" = $2  WHERE "categories"."id" = $3`)).
+		WithArgs(categoryName, 1, 2).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT INTO "tags" ("name","pet_id") VALUES ($1,$2) RETURNING "tags"."tag_id"`)).
-		WithArgs(tagName, 1).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(3))
+	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "tags" SET "name" = $1, "pet_id" = $2  WHERE "tags"."id" = $3`)).
+		WithArgs(tagName, 1, 5).
+		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	s.mock.ExpectCommit()
 
@@ -254,10 +256,8 @@ func (s *Suite) Test_repository_SavePet() {
 	require.NoError(s.T(), err)
 
 	// value returned from the DB
-	expectedCategory.ID = 0
-	expectedCategory.CategoryID = 2
-	expectedTag.ID = 0
-	expectedTag.TagID = 3
+	expectedCategory.ID = 2
+	expectedTag.ID = 5
 
 	require.Nil(s.T(), deep.Equal(&models.Pet{
 		ID:         1,
@@ -303,6 +303,21 @@ func (s *Suite) Test_repository_UpdatePet() {
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(regexp.QuoteMeta(
+		`UPDATE "pets" SET "id" = $1, "name" = $2, "photos_urls" = $3, "status" = $4  WHERE "pets"."id" = $5`)).
+		WithArgs(2, name, urls, status, 2).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "categories" SET "name" = $1, "pet_id" = $2  WHERE "categories"."id" = $3`)).
+		WithArgs(categoryName, 2, 4).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "tags" SET "name" = $1, "pet_id" = $2  WHERE "tags"."id" = $3`)).
+		WithArgs(tagName, 2, 2).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	s.mock.ExpectCommit()
+
+	s.mock.ExpectBegin()
+	s.mock.ExpectExec(regexp.QuoteMeta(
 		`DELETE FROM "tags" WHERE (pet_id = $1)`)).
 		WithArgs(2).WillDelayFor(time.Second).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -310,30 +325,26 @@ func (s *Suite) Test_repository_UpdatePet() {
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(regexp.QuoteMeta(
-		`UPDATE "pets" SET "id" = $1, "name" = $2, "photos_urls" = $3, "status" = $4  WHERE "pets"."id" = $5`)).
-		WithArgs(2, name, urls, status, 2).
+		`DELETE FROM "categories" WHERE (pet_id = $1)`)).
+		WithArgs(2).WillDelayFor(time.Second).
 		WillReturnResult(sqlmock.NewResult(1, 1))
-
-	s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT  INTO "categories" ("id","name","pet_id") VALUES ($1,$2,$3) RETURNING "categories"."category_id"`)).
-		WithArgs(4, categoryName, 2).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
-
-	s.mock.ExpectQuery(regexp.QuoteMeta(`INSERT  INTO "tags" ("id","name","pet_id") VALUES ($1,$2,$3) RETURNING "tags"."tag_id"`)).
-		WithArgs(2, tagName, 2).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(2))
 	s.mock.ExpectCommit()
 
 	s.mock.ExpectBegin()
-	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "categories" SET "id" = $1, "name" = $2, "pet_id" = $3  `)).
-		WithArgs(4, categoryName, 2).
+	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "tags" SET "name" = $1, "pet_id" = $2  WHERE "tags"."id" = $3`)).
+		WithArgs(tagName, 2, 2).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	s.mock.ExpectCommit()
+
+	s.mock.ExpectBegin()
+	s.mock.ExpectExec(regexp.QuoteMeta(`UPDATE "categories" SET "name" = $1, "pet_id" = $2  WHERE "categories"."id" = $3`)).
+		WithArgs(categoryName, 2, 4).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	s.mock.ExpectCommit()
 
 	res, err := s.repository.UpdatePet(&pet1)
 
 	require.NoError(s.T(), err)
-	expectedTag.TagID = 2
-
 	require.Nil(s.T(), deep.Equal(&models.Pet{
 		ID:         2,
 		Name:       name,

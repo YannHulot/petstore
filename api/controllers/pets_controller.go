@@ -178,7 +178,7 @@ func (p *PetController) DeletePet(c *gin.Context) {
 
 	if len(apiKey) == 0 {
 		log.Print("API key not supplied")
-		err := fmt.Errorf("Unauthorized - API key not supplied in Headers")
+		err := fmt.Errorf("unauthorized - API key not supplied in Headers")
 		c.JSON(http.StatusUnauthorized, gin.H{"type": "error", "message": err.Error()})
 		return
 	}
