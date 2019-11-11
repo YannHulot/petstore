@@ -2,10 +2,13 @@
 
 To whom it may concern,
 This app will allow you to store and retrieve pets.
-I cannot guarantee that everything works at 100%.
 
-I believe there are a fw issues in the code but it is doing 95% of what it is supposed to do.
+I believe there are a few issues in the code but it is doing 99% of what it is supposed to do.
 If you see a bug, please open an issue.
+
+## Build status
+
+[![CircleCI](https://circleci.com/gh/YannHulot/petstore/tree/master.svg?style=svg)](https://circleci.com/gh/YannHulot/petstore/tree/master)
 
 ## Motivation
 
@@ -159,4 +162,12 @@ I Found help on Stack Overflow, Medium and in other parts of the internet.
 
 ## License
 
-Free to use/reproduce/copy/amend
+MIT License
+
+Copyright (c)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
