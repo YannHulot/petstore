@@ -8,7 +8,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// CreatePgDb will create a new db named pet_store
+// CreatePgDb will create a new db based on the environment variables
 func CreatePgDb(c Config) error {
 	cmd := exec.Command("createdb", "-p", "5432", "-h", c.DbHost, "-U", c.DbUser, "-e", c.DbName)
 	var out bytes.Buffer
@@ -21,7 +21,7 @@ func CreatePgDb(c Config) error {
 	return nil
 }
 
-// OpenAndTestDBConnection will open a new connection and test it
+// OpenAndTestDBConnection will open a new connection and create the tables if needed in the database
 func OpenAndTestDBConnection(c Config) (*gorm.DB, error) {
 	dbURL := c.getDBConnectionURL()
 	DB, err := gorm.Open(c.DbDriver, dbURL)

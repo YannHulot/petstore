@@ -39,7 +39,7 @@ func main() {
 		db, err = models.OpenAndTestDBConnection(config)
 		if err != nil {
 			// connection has failed for some reason
-			// needs investigation
+			// needs investigation so we shut down the application
 			log.Fatalf("error while creating a connection with the db: %s", err.Error())
 		}
 	}

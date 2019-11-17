@@ -17,7 +17,8 @@ type Config struct {
 	DbDriver   string
 }
 
-// Validate will validate the config
+// Validate will validate the config and make sure that all the env variables needed to establish the connection
+// with the DB are present in the environment
 func (c *Config) Validate() error {
 	if c.DbUser == "" {
 		return fmt.Errorf("DbUser is empty")

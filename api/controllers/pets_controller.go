@@ -12,7 +12,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// PetController wraps all the o
+// PetController is a wrapper for all the handlers
 type PetController struct {
 	Repository repository.PetRepository
 }
@@ -24,7 +24,7 @@ func NewPetController(repository repository.PetRepository) PetController {
 	}
 }
 
-// UpdatePetWithFormData will update a pet in the database
+// UpdatePetWithFormData will update a pet's name and status in the database
 func (p *PetController) UpdatePetWithFormData(c *gin.Context) {
 	// get the param id(e.g 1) from the url
 	id := c.Param("id")
@@ -50,7 +50,7 @@ func (p *PetController) UpdatePetWithFormData(c *gin.Context) {
 	c.JSON(http.StatusOK, updatedPet)
 }
 
-// UploadFile will save a file in storage
+// UploadFile will save a file in local storage
 func (p *PetController) UploadFile(c *gin.Context) {
 	id := c.Param("id")
 	var form models.FileForm
@@ -103,7 +103,7 @@ func (p *PetController) SavePet(c *gin.Context) {
 	c.JSON(http.StatusOK, pet)
 }
 
-// FindPetByIDOrStatus will return a single Pet
+// FindPetByIDOrStatus will find a pet by its ID or status
 func (p *PetController) FindPetByIDOrStatus(c *gin.Context) {
 	// the id param is coming from the wildcard match in the router
 	id := c.Param("id")
@@ -121,7 +121,7 @@ func (p *PetController) FindPetByIDOrStatus(c *gin.Context) {
 	p.findPetByID(c, id)
 }
 
-// findPetByID will find a pet based on its ID
+// findPetByID will find a pet by its ID
 func (p *PetController) findPetByID(c *gin.Context, id string) {
 	pet, err := p.Repository.FindPetByID(id)
 	if err != nil {
@@ -138,7 +138,7 @@ func (p *PetController) findPetByID(c *gin.Context, id string) {
 	c.JSON(http.StatusOK, pet)
 }
 
-// findPetByStatus will find a pet in the db based on its status
+// findPetByStatus will find a pet/pets in the db by its status or statuses
 func (p *PetController) findPetByStatus(c *gin.Context) {
 	var finalPets []models.Pet
 	authorizedStatuses := map[string]bool{"sold": true, "available": true, "pending": true}
@@ -171,7 +171,7 @@ func (p *PetController) findPetByStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, finalPets)
 }
 
-// DeletePet will delete a single Pet
+// DeletePet will delete a single Pet from the DB
 func (p *PetController) DeletePet(c *gin.Context) {
 	apiKey := c.GetHeader("api_key")
 	id := c.Param("id")
@@ -198,7 +198,7 @@ func (p *PetController) DeletePet(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-// UpdatePet will update a single Pet
+// UpdatePet will update a single pet in the DB
 func (p *PetController) UpdatePet(c *gin.Context) {
 	var petToSave models.Pet
 
