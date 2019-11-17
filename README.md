@@ -25,8 +25,8 @@ The linter golangci-lint is used to ensure the highest code quality and avoid po
 Written in Golang, this project uses may open source libraries and frameworks such as for example:
 
 - Gin router
-- Gorm database ORM(not a fan)
-- SQLMock to mock database interactions(big fan)
+- Gorm database ORM
+- SQLMock to mock database interactions
 - PostgreSQL as a database
 - Docker for easy deployment
 
@@ -137,12 +137,27 @@ Errors will be returned in this format:
 
 Steps:
 
-- `git clone this repository`
-- `cd` in the repository
-- run `docker-compose up --build`
-- wait about 5 minutes for everything to be set up depending on your internet speed
+```bash
+git clone https://github.com/YannHulot/petstore
+```
+
+```bash
+cd petstore
+```
+
+```bash
+docker-compose up --build
+```
+
+Wait about 2 minutes for everything to be set up depending on your internet speed and for the different services to start.
 
 If everything went well you should now have the server running on port 8080
+
+## Shut down the application
+
+```bash
+docker-compose down
+```
 
 ### Warning
 

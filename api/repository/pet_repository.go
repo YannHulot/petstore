@@ -7,12 +7,12 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// PetRepository will give the repository access to the database
+// PetRepository provides access to the database
 type PetRepository struct {
 	datastore *gorm.DB
 }
 
-// NewPetRepository will generate a new repository
+// NewPetRepository creates a new PetRepository
 func NewPetRepository(db *gorm.DB) PetRepository {
 	return PetRepository{
 		datastore: db,
@@ -29,7 +29,7 @@ func (p *PetRepository) SavePet(pet *models.Pet) (*models.Pet, error) {
 	return pet, nil
 }
 
-// FindPetByID will find a single Pet in the DB
+// FindPetByID will find a single Pet in the DB by its ID
 func (p *PetRepository) FindPetByID(id string) (*models.Pet, error) {
 	var pet models.Pet
 
@@ -41,7 +41,7 @@ func (p *PetRepository) FindPetByID(id string) (*models.Pet, error) {
 	return &pet, nil
 }
 
-// UpdatePetAttributes will update a pet in the database
+// UpdatePetAttributes will update a pet's name and status in the database
 func (p *PetRepository) UpdatePetAttributes(id string, name string, status string) (*models.Pet, error) {
 	err := p.datastore.Debug().Model(&models.Pet{}).Where("id = ?", id).Updates(
 		map[string]interface{}{"name": name, "status": status}).Error
@@ -57,7 +57,7 @@ func (p *PetRepository) UpdatePetAttributes(id string, name string, status strin
 	return pet, nil
 }
 
-// UpdatePet will update a pet in the database
+// UpdatePet will update a single pet in the database
 func (p *PetRepository) UpdatePet(updatedPet *models.Pet) (*models.Pet, error) {
 	if updatedPet.ID == 0 {
 		return &models.Pet{}, fmt.Errorf("pet id is null, cannot update")
@@ -141,7 +141,7 @@ func (p *PetRepository) FindPetByStatus(status string) (*[]models.Pet, error) {
 	return &pets, nil
 }
 
-// DeletePet will update a pet in the database
+// DeletePet will delete a pet in the database
 func (p *PetRepository) DeletePet(id string) error {
 	// cascading deletes
 	// try to delete the related records first and then the main record
